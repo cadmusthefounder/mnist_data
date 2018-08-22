@@ -1,8 +1,10 @@
+from PIL import Image
 import numpy as np
 import gzip
 import os
 import sys
 import getopt
+import shutil
 
 params = {
     'train_images' : 'train-images-idx3-ubyte.gz',
@@ -21,6 +23,29 @@ def load_mnist(images_path, labels_path):
         np.reshape(images, (len(labels), 28, 28))
 
     return images, labels
+
+def write_data(data, images, labels):
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+
+    tmp_directory = os.path.join(current_directory, '..', 'tmp')
+    tmp_directories = [os.path.join(tmp_directory, str(i)) for i in range(10)]
+    for t in tmp_directories:
+        if not os.path.exists(t):
+            os.makedirs(t)
+    
+    for (i, label) in enumerate(labels):
+        image = images[i]
+        save_filename = os.path.join(tmp_directory, str(int(label)), str(i) + '.png')
+        pillow_image = Image.fromarray(image, mode='L')
+        pillow_image.save(save_filename)
+
+    output_directory = os.path.join(current_directory, '..', 'output')
+    output_filename = os.path.join(output_directory, data)
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
+    shutil.make_archive(output_filename, 'zip', tmp_directory)
+    shutil.rmtree(tmp_directory)
 
 def main(argv):
     try:
@@ -44,10 +69,8 @@ def main(argv):
     train_images, train_labels = load_mnist(train_images_file, train_labels_file)
     test_images, test_labels = load_mnist(test_images_file, test_labels_file)
 
-    print(train_images.shape)
-    print(train_labels.shape)
-    print(test_images.shape)
-    print(test_labels.shape)
+    write_data(data + '_train', train_images, train_labels)
+    write_data(data + '_test', test_images, test_labels)
 
 if __name__== "__main__":
     main(sys.argv)
