@@ -13,6 +13,25 @@ params = {
     'test_labels' : 't10k-labels-idx1-ubyte.gz'
 }
 
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\r')
+    # Print New Line on Complete
+    if iteration == total:
+        print()
 
 def load_mnist(images_path, labels_path):
     with gzip.open(labels_path, 'rb') as lbpath:
@@ -25,25 +44,30 @@ def load_mnist(images_path, labels_path):
     return images, labels
 
 def write_data(data, images, labels):
-    current_directory = os.path.dirname(os.path.abspath(__file__))
+    unique_labels = list(set(labels))
 
+    current_directory = os.path.dirname(os.path.abspath(__file__))
     tmp_directory = os.path.join(current_directory, '..', 'tmp')
-    tmp_directories = [os.path.join(tmp_directory, str(i)) for i in range(10)]
+    tmp_directories = [os.path.join(tmp_directory, str(unique_labels[i])) for i in range(len(unique_labels))]
     for t in tmp_directories:
         if not os.path.exists(t):
             os.makedirs(t)
     
+    print("Saving data as images...")
+    printProgressBar(0, len(labels), prefix = 'Progress:', suffix = 'Complete', length = 50)
     for (i, label) in enumerate(labels):
         image = images[i]
-        save_filename = os.path.join(tmp_directory, str(int(label)), str(i) + '.png')
+        save_filename = os.path.join(tmp_directory, str(label), str(i) + '.png')
         pillow_image = Image.fromarray(image, mode='L')
         pillow_image.save(save_filename)
+        printProgressBar(i + 1, len(labels), prefix = 'Progress:', suffix = 'Complete', length = 50)
 
     output_directory = os.path.join(current_directory, '..', 'output')
     output_filename = os.path.join(output_directory, data)
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
+    print("Creating zip file...")
     shutil.make_archive(output_filename, 'zip', tmp_directory)
     shutil.rmtree(tmp_directory)
 
